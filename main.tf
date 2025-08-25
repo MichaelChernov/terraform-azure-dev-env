@@ -1,16 +1,3 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "=4.41.0"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {}
-}
-
 resource "azurerm_resource_group" "mtc-rg" {
   name     = "mtc-resources"
   location = "East US"
@@ -121,18 +108,4 @@ resource "azurerm_linux_virtual_machine" "mtc-vm" {
     sku       = "22_04-lts"
     version   = "latest"
   }
-}
-
-data "azurerm_key_vault" "mtc-secrets-vault" {
-  name                = "dev-env-kv-test"
-  resource_group_name = "mtc-secrets"
-}
-
-data "azurerm_key_vault_secret" "mtc-client-ip" {
-  name         = "client-ip"
-  key_vault_id = data.azurerm_key_vault.mtc-secrets-vault.id
-}
-
-output "public_ip_address" {
-  value = "${azurerm_linux_virtual_machine.mtc-vm.name}: ${azurerm_public_ip.mtc-ip.ip_address}"
 }
