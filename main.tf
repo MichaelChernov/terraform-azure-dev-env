@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=3.0.0"
+      version = "=4.41.0"
     }
   }
 }
@@ -55,7 +55,7 @@ resource "azurerm_network_security_rule" "mtc-dev-rule" {
   protocol                    = "*"
   source_port_range           = "*"
   destination_port_range      = "*"
-  source_address_prefix       = var.my_ip_prefix
+  source_address_prefix       = "${data.azurerm_key_vault_secret.mtc-client-ip.value}/32"
   destination_address_prefix  = "*"
   resource_group_name         = azurerm_resource_group.mtc-rg.name
   network_security_group_name = azurerm_network_security_group.mtc-sg.name
@@ -103,6 +103,8 @@ resource "azurerm_linux_virtual_machine" "mtc-vm" {
   admin_username        = "adminuser"
   network_interface_ids = [azurerm_network_interface.mtc-nic.id]
 
+  custom_data = filebase64("customdata.tpl")
+
   admin_ssh_key {
     username   = "adminuser"
     public_key = file("~/.ssh/mtcazurekey.pub")
@@ -119,4 +121,18 @@ resource "azurerm_linux_virtual_machine" "mtc-vm" {
     sku       = "22_04-lts"
     version   = "latest"
   }
+}
+
+data "azurerm_key_vault" "mtc-secrets-vault" {
+  name                = "dev-env-kv-test"
+  resource_group_name = "mtc-secrets"
+}
+
+data "azurerm_key_vault_secret" "mtc-client-ip" {
+  name         = "client-ip"
+  key_vault_id = data.azurerm_key_vault.mtc-secrets-vault.id
+}
+
+output "public_ip_address" {
+  value = "${azurerm_linux_virtual_machine.mtc-vm.name}: ${azurerm_public_ip.mtc-ip.ip_address}"
 }
